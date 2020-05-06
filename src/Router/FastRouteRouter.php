@@ -80,21 +80,6 @@ class FastRouteRouter extends AbstractRouter
     }
 
     /**
-     * @param callable $callable
-     * @return Dispatcher
-     */
-    protected function getDispatcher(callable $callable): Dispatcher
-    {
-        if (is_string($this->cache_file)) {
-            return cachedDispatcher($callable, [
-                'cacheFile' => $this->cache_file
-            ]);
-        }
-
-        return simpleDispatcher($callable);
-    }
-
-    /**
      * @return array
      */
     protected function getDispatchData(): array
@@ -134,9 +119,7 @@ class FastRouteRouter extends AbstractRouter
      */
     public function match(ServerRequestInterface $request): RouteResultInterface
     {
-        $dispatcher = $dispatcher = $this->getDispatcher(function () {
-            return new GroupCountBased($this->getDispatchData());
-        });
+        $dispatcher = new GroupCountBased($this->getDispatchData());
 
         $route_info = $dispatcher->dispatch(
             $request->getMethod(),
