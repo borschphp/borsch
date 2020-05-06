@@ -64,7 +64,7 @@ class FastRouteRouter extends AbstractRouter
                 $collector->addRoute(
                     $route->getAllowedMethods(),
                     $route->getPath(),
-                    $route
+                    $route->getPath()
                 );
             }
         });
@@ -75,15 +75,46 @@ class FastRouteRouter extends AbstractRouter
         );
 
         if ($route_info[0] == Dispatcher::FOUND) {
-            $route = $route_info[1];
-            $vars = $route_info[2];
-
-            return RouteResult::fromRoute($route, $vars);
+            return $this->getMatchedRoute($route_info, $request->getMethod());
         }
 
         return RouteResult::fromRouteFailure(
             $route_info[0] == Dispatcher::METHOD_NOT_ALLOWED ?
                 $route_info[1] : []
         );
+    }
+
+    /**
+     * @param array $route_info
+     * @param string $method
+     * @return RouteResultInterface
+     */
+    protected function getMatchedRoute(array $route_info, string $method): RouteResultInterface
+    {
+        $path  = $route_info[1];
+
+        /** @var RouteInterface $route */
+        $route = array_reduce($this->routes, function ($matched, $route) use ($path, $method) {
+            if ($matched) {
+                return $matched;
+            }
+
+            if ($path != $route->getPath()) {
+                return $matched;
+            }
+
+            if (!$route->allowsMethod($method)) {
+                return $matched;
+            }
+
+            return $route;
+        }, false);
+
+        if (false === $route) {
+            // Shouldn't happen...
+            return RouteResult::fromRouteFailure($route_info[1]);
+        }
+
+        return RouteResult::fromRoute($route, $route_info[2]);
     }
 }
